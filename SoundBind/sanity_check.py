@@ -3,8 +3,9 @@ import pandas as pd
 from tqdm import tqdm
 import torchaudio
 from PIL import Image
+from config import cfg
 
-data_path = "/storage1/jacobsn/Active/proj_smart/inat_image_sounds/"
+data_path = cfg["data_path"]
 meta_df = pd.read_csv(os.path.join(data_path,"metadata.csv"))
 failed_ids = []
 for i in tqdm(range(len(meta_df))):
@@ -22,4 +23,4 @@ for i in tqdm(range(len(meta_df))):
 
 df = pd.DataFrame(columns=['id'])
 df['id'] = failed_ids
-df.to_csv("/storage1/jacobsn/Active/proj_smart/inat_image_sounds/failed_ids.csv")
+df.to_csv(os.path.join(cfg["data_path"],"failed_ids.csv"))
