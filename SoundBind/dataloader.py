@@ -31,12 +31,12 @@ class INatDataset(Dataset):
         sound_format = sample.sound_format
         image_path = os.path.join(cfg['data_path'],"images",str(id)+".jpg")
         sound_path = os.path.join(cfg['data_path'],"sounds",str(id)+"."+sound_format)
-        import code; code.interact(local=locals())
         sound = get_audio_clap(sound_path)
         
         for k in sound.keys():
-            sound[k] = sound[k].squeeze(1)
+            sound[k] = sound[k].squeeze(0)
         image = self.transform(Image.open(image_path))
+
         return image, sound
 
 
@@ -45,5 +45,7 @@ if __name__=='__main__':
     print(len(inat_data))
     train_loader = torch.utils.data.DataLoader(inat_data,
                                             num_workers=0, batch_size=2, shuffle=True, drop_last=False,pin_memory=True)
-    batch = next(iter(train_loader))
-    import code; code.interact(local=locals())
+    for i in rangge(10):
+        images, sounds = next(iter(train_loader))
+        print(images.shape, sounds['input_features'].shape, sounds['is_longer'].shape)
+        # import code; code.interact(local=locals())

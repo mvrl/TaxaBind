@@ -1,4 +1,4 @@
-from model import LocationBind
+from model import AudioBind
 from dataloader import INatDataset
 import wandb
 import pytorch_lightning as pl
@@ -8,7 +8,7 @@ import torch
 import random
 import numpy as np
 import os
-
+from config import cfg
 
 def seed_everything(seed=42):
     """
@@ -25,15 +25,15 @@ def seed_everything(seed=42):
 
 if __name__=='__main__':
     seed_everything()
-    train_dataset = INatDataset('../metaformer', 'train.json')
-    val_dataset = INatDataset('../metaformer', 'val.json')
-    model = LocationBind(train_dataset, val_dataset)
+    train_dataset = INatDataset(data_file=cfg['train_df'])
+    val_dataset = INatDataset(data_file=cfg['val_df'])
+    model = AudioBind(train_dataset, val_dataset)
     torch.cuda.empty_cache()
     logger = WandbLogger(project="Eco-Bind", name="sound-bind")
     checkpoint = ModelCheckpoint(
         monitor='val_loss',
         dirpath='checkpoints',
-        filename='locbind-{epoch:02d}-{val_loss:.2f}',
+        filename='soundbind-{epoch:02d}-{val_loss:.2f}',
         mode='min'
     )
     trainer = pl.Trainer(
