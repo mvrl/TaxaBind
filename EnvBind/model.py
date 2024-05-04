@@ -13,6 +13,25 @@ def clip_loss(similarity: torch.Tensor) -> torch.Tensor:
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
     return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
 
+class ResLayer(nn.Module):
+    def __init__(self, linear_size):
+        super(ResLayer, self).__init__()
+        self.l_size = linear_size
+        self.nonlin1 = nn.ReLU(inplace=True)
+        self.nonlin2 = nn.ReLU(inplace=True)
+        self.dropout1 = nn.Dropout(0.1)
+        self.w1 = nn.Linear(self.l_size, self.l_size)
+        self.w2 = nn.Linear(self.l_size, self.l_size)
+
+    def forward(self, x):
+        y = self.w1(x)
+        y = self.nonlin1(y)
+        y = self.dropout1(y)
+        y = self.w2(y)
+        y = self.nonlin2(y)
+        out = x + y
+        return out
+
 class ResidualFCNet(nn.Module):
 
     def __init__(self, num_inputs, num_filts, depth=4):
@@ -44,7 +63,7 @@ class EnvBind(pl.LightningModule):
     def forward(self, image, env_feats):
         with torch.no_grad():
             image_embeds, *_ = self.model(image)
-        env_embeds = torch.nn.functional.normalize(self.env_encoder(env_feats), dim=-1)
+        env_embeds = torch.nn.functional.normalize(self.env_encoder(env_feats.float()), dim=-1)
         return image_embeds, env_embeds
     
     def shared_step(self, batch):

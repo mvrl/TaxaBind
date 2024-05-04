@@ -25,8 +25,8 @@ def seed_everything(seed=42):
 
 if __name__=='__main__':
     seed_everything()
-    train_dataset = INatDataset('../metaformer', 'train.json')
-    val_dataset = INatDataset('../metaformer', 'val.json')
+    train_dataset = INatDataset('../../../metaformer', 'train.json', 'bioclim_elevation_scaled.npy')
+    val_dataset = INatDataset('../../../metaformer', 'val.json', 'bioclim_elevation_scaled.npy')
     model = EnvBind(train_dataset, val_dataset)
     torch.cuda.empty_cache()
     logger = WandbLogger(project="Eco-Bind", name="env-bind")

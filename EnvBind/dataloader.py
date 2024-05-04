@@ -14,7 +14,8 @@ class INatDataset(Dataset):
         self.work_dir = work_dir
         self.json = json.load(open(os.path.join(self.work_dir, json_path)))['images']
         self.filtered_json = [d for d in self.json if d['latitude'] is not None and d['longitude'] is not None]
-        self.env = np.load(env_path)
+        self.env = torch.tensor(np.load(env_path))
+        self.env[torch.isnan(self.env)] = 0.0
         self.transform = transforms.Compose([
                 transforms.Resize((256, 256)),
                 # transforms.CenterCrop((224, 224)),
@@ -53,7 +54,7 @@ class INatDataset(Dataset):
                     continue
         img_path = os.path.join(self.work_dir, self.filtered_json[idx]['file_name'])
         img = self.transform(Image.open(img_path))
-        return img, torch.Tensor(env_feats)
+        return img, env_feats
 
 
 if __name__=='__main__':
