@@ -1,0 +1,12 @@
+transformers
+open_clip_torch
+torch==2.0.1
+torchvision==0.15.2
+numpy
+matplotlib
+scikit-learn
+scikit-image
+torchaudio
+pytorch_lightning==2.2.1
+wandb
+pandas
