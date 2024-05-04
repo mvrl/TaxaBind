@@ -44,8 +44,8 @@ if __name__=='__main__':
     inat_data = INatDataset(data_file=cfg['train_df'])
     print(len(inat_data))
     train_loader = torch.utils.data.DataLoader(inat_data,
-                                            num_workers=0, batch_size=2, shuffle=True, drop_last=False,pin_memory=True)
-    for i in rangge(10):
+                                            num_workers=0, batch_size=8, shuffle=True, drop_last=False,pin_memory=True)
+    for i in range(10):
         images, sounds = next(iter(train_loader))
         print(images.shape, sounds['input_features'].shape, sounds['is_longer'].shape)
         # import code; code.interact(local=locals())

@@ -29,7 +29,7 @@ if __name__=='__main__':
     val_dataset = INatDataset(data_file=cfg['val_df'])
     model = AudioBind(train_dataset, val_dataset)
     torch.cuda.empty_cache()
-    logger = WandbLogger(project="Eco-Bind", name="sound-bind")
+    logger = WandbLogger(save_dir=cfg['log_path'],project="Eco-Bind", name="sound-bind")
     checkpoint = ModelCheckpoint(
         monitor='val_loss',
         dirpath='checkpoints',

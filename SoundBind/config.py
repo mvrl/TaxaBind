@@ -5,7 +5,7 @@ cfg['data_path'] = "/storage1/jacobsn/Active/proj_smart/inat_image_sounds"
 cfg["train_df"] = "/storage1/jacobsn/Active/proj_smart/inat_image_sounds/train_df.csv"
 cfg["val_df"] = "/storage1/jacobsn/Active/proj_smart/inat_image_sounds/validate_df.csv"
 cfg["test_df"] = "/storage1/jacobsn/Active/proj_smart/inat_image_sounds/test_df.csv"
-cfg['log_path'] = "/home/k.subash/EcoBind/SoundBind/logs"
+cfg['log_path'] = "/home/k.subash/EcoBind/logs"
 
 
 def replace_storage_path(path):
