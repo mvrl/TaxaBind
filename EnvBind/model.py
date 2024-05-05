@@ -6,12 +6,15 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 def clip_loss(similarity: torch.Tensor) -> torch.Tensor:
-    overhead_img_loss = contrastive_loss(similarity)
+    overhead_img_loss = contrastive_loss(similarity, compute_neg=True)
     ground_img_loss = contrastive_loss(similarity.t())
-    return (overhead_img_loss + ground_img_loss) / 2.0
+    return 0.4*overhead_img_loss + 0.6*ground_img_loss
 
-def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
-    return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
+def contrastive_loss(logits: torch.Tensor, compute_neg=False) -> torch.Tensor:
+    if compute_neg:
+        return nn.functional.cross_entropy(logits, torch.cat((torch.eye(logits.shape[0]), torch.zeros(logits.shape[0], logits.shape[0])), dim=-1).to(logits.device))
+    else:
+        return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
 
 class ResLayer(nn.Module):
     def __init__(self, linear_size):
@@ -60,15 +63,16 @@ class EnvBind(pl.LightningModule):
         self.batch_size = kwargs.get('batch_size', 1024)
         self.lr = kwargs.get('lr', 1e-4)
 
-    def forward(self, image, env_feats):
+    def forward(self, image, env_feats, env_feats_neg):
         with torch.no_grad():
             image_embeds, *_ = self.model(image)
+        env_feats = torch.cat((env_feats, env_feats_neg))
         env_embeds = torch.nn.functional.normalize(self.env_encoder(env_feats.float()), dim=-1)
         return image_embeds, env_embeds
     
     def shared_step(self, batch):
-        image, env_feats, *_ = batch
-        image_embeds, env_embeds = self(image, env_feats)
+        image, env_feats, env_feats_neg = batch
+        image_embeds, env_embeds = self(image, env_feats, env_feats_neg)
         logit_scale = self.logit_scale.exp()
         logits_per_img = torch.matmul(image_embeds,env_embeds.t())*logit_scale
         cross_contrastive_loss = clip_loss(logits_per_img)
@@ -100,7 +104,7 @@ class EnvBind(pl.LightningModule):
         return DataLoader(self.val_dataset,
                           batch_size=self.batch_size,
                           num_workers=16,
-                          shuffle=False,
+                          shuffle=True,
                           persistent_workers=False)
     
     def configure_optimizers(self):

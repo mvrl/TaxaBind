@@ -33,9 +33,15 @@ class INatDataset(Dataset):
         try:
             latitude = float(self.filtered_json[idx]['latitude'])
             longitude = float(self.filtered_json[idx]['longitude'])
+            neg_lat = torch.rand(2)
+            neg_lat[0] = neg_lat[0]*180.0 - 90.0
+            neg_lat[1] = neg_lat[1]*360.0 - 180.0
             x_cell = int((longitude+180.0)*self.env.shape[1]/360.0)
             y_cell = int((-latitude+90.0)*self.env.shape[0]/180.0)
             env_feats = self.env[y_cell, x_cell, :]
+            x_cell_neg = int((neg_lat[1]+180.0)*self.env.shape[1]/360.0)
+            y_cell_neg = int((-neg_lat[0]+90.0)*self.env.shape[0]/180.0)
+            env_feats_neg = self.env[y_cell_neg, x_cell_neg, :]
 
         except Exception as e:
             print(e)
@@ -45,16 +51,22 @@ class INatDataset(Dataset):
                     idx = torch.randint(0, len(self.filtered_json), (1,)).item()
                     latitude = float(self.filtered_json[idx]['latitude'])
                     longitude = float(self.filtered_json[idx]['longitude'])
+                    neg_lat = torch.rand(2)
+                    neg_lat[0] = neg_lat[0]*180.0 - 90.0
+                    neg_lat[1] = neg_lat[1]*360.0 - 180.0
                     x_cell = int((longitude+180.0)*self.env.shape[1]/360.0)
                     y_cell = int((-latitude+90.0)*self.env.shape[0]/180.0)
                     env_feats = self.env[y_cell, x_cell, :]
+                    x_cell_neg = int((neg_lat[1]+180.0)*self.env.shape[1]/360.0)
+                    y_cell_neg = int((-neg_lat[0]+90.0)*self.env.shape[0]/180.0)
+                    env_feats_neg = self.env[y_cell_neg, x_cell_neg, :]
                     break
                 except:
                     #print(self.json['images'][idx])
                     continue
         img_path = os.path.join(self.work_dir, self.filtered_json[idx]['file_name'])
         img = self.transform(Image.open(img_path))
-        return img, env_feats
+        return img, env_feats, env_feats_neg
 
 
 if __name__=='__main__':

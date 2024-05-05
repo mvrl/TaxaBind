@@ -24,10 +24,10 @@ def seed_everything(seed=42):
 
 
 if __name__=='__main__':
-    seed_everything()
+    seed_everything(1212)
     train_dataset = INatDataset('../../../metaformer', 'train.json', 'bioclim_elevation_scaled.npy')
     val_dataset = INatDataset('../../../metaformer', 'val.json', 'bioclim_elevation_scaled.npy')
-    model = EnvBind(train_dataset, val_dataset)
+    model = EnvBind.load_from_checkpoint("/storage1/jacobsn/Active/user_s.sastry/ecobind/EcoBind/EnvBind/checkpoints/envbind-epoch=00-val_loss=6.16.ckpt", train_dataset=train_dataset, val_dataset=val_dataset)
     torch.cuda.empty_cache()
     logger = WandbLogger(project="Eco-Bind", name="env-bind")
     checkpoint = ModelCheckpoint(
@@ -43,8 +43,9 @@ if __name__=='__main__':
         max_epochs=1500,
         num_nodes=1,
         callbacks=[checkpoint],
-        accumulate_grad_batches=16,
+        accumulate_grad_batches=8,
         logger=logger,
-        log_every_n_steps=1
+        log_every_n_steps=1,
+        val_check_interval=0.25
         )
     trainer.fit(model)
