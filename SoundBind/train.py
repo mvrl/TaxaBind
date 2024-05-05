@@ -53,7 +53,8 @@ if __name__=='__main__':
         monitor='val_loss',
         dirpath=ckpt_save_path,
         filename='soundbind-{epoch:02d}-{val_loss:.2f}',
-        mode='min'
+        mode='min',
+        save_top_k=3
     )
     trainer = pl.Trainer(
         accelerator='gpu',
