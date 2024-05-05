@@ -9,6 +9,7 @@ import random
 import numpy as np
 import os
 from config import cfg
+from argparse import ArgumentParser
 
 def seed_everything(seed=42):
     """
@@ -24,21 +25,39 @@ def seed_everything(seed=42):
 
 
 if __name__=='__main__':
+
+    parser = ArgumentParser(description='')
+    parser.add_argument('--wandb_mode', type=str, default='disabled')
+    parser.add_argument('--devices', type=int, default=1)
+    parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--num_workers', type=int, default=16)
+    parser.add_argument('--run_name', type=str, default='test')
+
+    args = parser.parse_args()
+
     seed_everything()
     train_dataset = INatDataset(data_file=cfg['train_df'])
     val_dataset = INatDataset(data_file=cfg['val_df'])
-    model = AudioBind(train_dataset, val_dataset)
+    kwargs = {'batch_size':args.batch_size, 'num_workers': args.num_workers}
+    
+    model = AudioBind(train_dataset, val_dataset, **kwargs)
     torch.cuda.empty_cache()
-    logger = WandbLogger(save_dir=cfg['log_path'],project="Eco-Bind", name="sound-bind")
+
+    ckpt_save_path = os.path.join(cfg['log_path'],"sound-bind",args.run_name)
+    if not os.path.exists(ckpt_save_path):
+        os.makedirs(ckpt_save_path)
+    print("Saving checkpoints to:",ckpt_save_path)
+
+    logger = WandbLogger(save_dir=cfg['log_path'],project="Eco-Bind", name="sound-bind",mode=args.wandb_mode)
     checkpoint = ModelCheckpoint(
         monitor='val_loss',
-        dirpath='checkpoints',
+        dirpath=ckpt_save_path,
         filename='soundbind-{epoch:02d}-{val_loss:.2f}',
         mode='min'
     )
     trainer = pl.Trainer(
         accelerator='gpu',
-        devices=2,
+        devices=args.devices,
         strategy='ddp_find_unused_parameters_false',
         max_epochs=1500,
         num_nodes=1,

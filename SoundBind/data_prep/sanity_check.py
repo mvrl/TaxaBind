@@ -1,3 +1,5 @@
+# Performs a simple sanity check and identify corupt samples in the database.
+
 import os
 import pandas as pd
 from tqdm import tqdm

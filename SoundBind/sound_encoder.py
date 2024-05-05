@@ -12,7 +12,7 @@ processor = ClapProcessor.from_pretrained("laion/clap-htsat-fused")
 SAMPLE_RATE = 48000
 
 def get_audio_clap(path_to_audio,padding="repeatpad",truncation="fusion"):
-    track, sr = torchaudio.load(path_to_audio) 
+    track, sr = torchaudio.load(path_to_audio)
     track = track.mean(axis=0)
     track = torchaudio.functional.resample(track, orig_freq=sr, new_freq=SAMPLE_RATE)
     output = processor(audios=track, sampling_rate=SAMPLE_RATE, max_length_s=10, return_tensors="pt",padding=padding,truncation=truncation)

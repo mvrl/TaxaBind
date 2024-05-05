@@ -7,15 +7,13 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 def clip_loss(similarity: torch.Tensor) -> torch.Tensor:
-    audio_loss = contrastive_loss(similarity, compute_neg=True)
+    audio_loss = contrastive_loss(similarity)
     ground_img_loss = contrastive_loss(similarity.t())
     return 0.5*audio_loss + 0.5*ground_img_loss
 
-def contrastive_loss(logits: torch.Tensor, compute_neg=False) -> torch.Tensor:
-    if compute_neg:
-        return nn.functional.cross_entropy(logits, torch.cat((torch.eye(logits.shape[0]), torch.zeros(logits.shape[0], logits.shape[0])), dim=-1).to(logits.device))
-    else:
-        return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
+def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
+    
+    return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
 
 class AudioBind(pl.LightningModule):
     def __init__(self, train_dataset, val_dataset, **kwargs):
@@ -27,7 +25,8 @@ class AudioBind(pl.LightningModule):
             param.requires_grad = False
         self.audio_encoder = AudioEncoder(freeze=False)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.batch_size = kwargs.get('batch_size', 512)
+        self.batch_size = kwargs.get('batch_size')
+        self.num_workers = kwargs.get('num_workers')
         self.lr = kwargs.get('lr', 1e-4)
 
     def forward(self, image, audio):
@@ -63,14 +62,14 @@ class AudioBind(pl.LightningModule):
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
                           batch_size=self.batch_size,
-                          num_workers=16,
+                          num_workers=self.num_workers,
                           shuffle=True,
                           persistent_workers=False)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset,
                           batch_size=self.batch_size,
-                          num_workers=16,
+                          num_workers=self.num_workers,
                           shuffle=False,
                           persistent_workers=False)
     
