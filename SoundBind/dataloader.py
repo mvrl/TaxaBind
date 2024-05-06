@@ -25,7 +25,8 @@ class INatDataset(Dataset):
         ])
     def __len__(self):
         return len(self.data_file)
-    def __getitem__(self, idx):
+        
+    def get_sample(self,idx):
         sample = self.data_file.iloc[idx]
         id = sample.id
         sound_format = sample.sound_format
@@ -36,6 +37,20 @@ class INatDataset(Dataset):
         for k in sound.keys():
             sound[k] = sound[k].squeeze(0)
         image = self.transform(Image.open(image_path))
+
+        return image, sound
+
+    def __getitem__(self, idx):
+        try:
+            image, sound = self.get_sample(idx)
+        except:
+            while True:
+                try:
+                    idx = torch.randint(0, len(self.data_file), (1,)).item()
+                    image, sound = self.get_sample(idx)
+                    break
+                except:
+                    continue
 
         return image, sound
 
