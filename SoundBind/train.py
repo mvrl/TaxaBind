@@ -28,7 +28,7 @@ if __name__=='__main__':
 
     parser = ArgumentParser(description='')
     parser.add_argument('--wandb_mode', type=str, default='disabled')
-    parser.add_argument('--devices', type=int, default=1)
+    parser.add_argument('--devices', type=str, default="auto")
     parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--num_workers', type=int, default=16)
     parser.add_argument('--run_name', type=str, default='test')
