@@ -4,7 +4,7 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
-data_path = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/"
+data_path = "/scratch/k.subash/data/inat_image_sounds"
 df = pd.read_csv(os.path.join(data_path,"observations-426986_clean.csv"))
 
 images = os.listdir(os.path.join(data_path,"images"))

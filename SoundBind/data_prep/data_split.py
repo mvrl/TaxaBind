@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import numpy as np
 
-data_path = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/"
+data_path = "/scratch/k.subash/data/inat_image_sounds/"
 
 meta_df = pd.read_csv(os.path.join(data_path,"metadata.csv"))
 failed_ids = list(pd.read_csv(os.path.join(data_path,"failed_ids.csv"))['id'])

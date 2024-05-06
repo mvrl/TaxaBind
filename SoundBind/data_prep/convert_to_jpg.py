@@ -26,6 +26,6 @@ def main(input_directory, output_directory):
                 convert_to_jpg(input_file, output_file)
 
 if __name__ == "__main__":
-    input_directory = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/images"
-    output_directory = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/images_jpg"
+    input_directory = "/scratch/k.subash/data/inat_image_sounds/images"
+    output_directory = "/scratch/k.subash/data/inat_image_sounds/images_jpg"
     main(input_directory, output_directory)

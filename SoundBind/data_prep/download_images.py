@@ -6,9 +6,9 @@ import pandas as pd
 from tqdm import tqdm
 import time
 
-image_path = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/images" #create this path
-metadata_path = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/observations-426986.csv" #from inat download
-final_meta_path = "/storage1/fs1/jacobsn/Active/proj_smart/inat_image_sounds/observations-426986_clean.csv"
+image_path = "/scratch/k.subash/data/inat_image_sounds/images" #create this path
+metadata_path = "/scratch/k.subash/data/inat_image_sounds/observations-426986.csv" #from inat download
+final_meta_path = "/scratch/k.subash/data/inat_image_sounds/observations-426986_clean.csv"
 
 # Using the following function, simple cleaning of metadata was already done.
 def clean_metadata(metadata_path):
