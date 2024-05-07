@@ -1,7 +1,7 @@
 transformers
 open_clip_torch
-torch==2.0.1
-torchvision==0.15.2
+torch
+torchvision
 numpy
 matplotlib
 scikit-learn
