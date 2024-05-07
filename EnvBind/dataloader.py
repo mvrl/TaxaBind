@@ -8,12 +8,16 @@ from torchvision.transforms import v2
 import torch
 import numpy as np
 
-
 class INatDataset(Dataset):
     def __init__(self, work_dir, json_path, env_path):
         self.work_dir = work_dir
-        self.json = json.load(open(os.path.join(self.work_dir, json_path)))['images']
-        self.filtered_json = [d for d in self.json if d['latitude'] is not None and d['longitude'] is not None]
+        self.json = json.load(open(os.path.join(self.work_dir, json_path)))
+        self.images = self.json['images']
+        self.annot = self.json['annotations']
+        for i in range(len(self.images)):
+            assert self.images[i]['id'] == self.annot[i]['id']
+            self.images[i]['label'] = self.annot[i]['category_id']
+        self.filtered_json = [d for d in self.images if d['latitude'] is not None and d['longitude'] is not None]
         self.env = torch.tensor(np.load(env_path))
         self.env[torch.isnan(self.env)] = 0.0
         self.transform = transforms.Compose([
@@ -66,7 +70,7 @@ class INatDataset(Dataset):
                     continue
         img_path = os.path.join(self.work_dir, self.filtered_json[idx]['file_name'])
         img = self.transform(Image.open(img_path))
-        return img, env_feats, env_feats_neg
+        return img, env_feats, env_feats_neg, self.filtered_json[idx]['label']
 
 
 if __name__=='__main__':

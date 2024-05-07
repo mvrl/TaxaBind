@@ -5,16 +5,31 @@ import torch.nn as nn
 import numpy as np
 from torch.utils.data import DataLoader
 
-def clip_loss(similarity: torch.Tensor) -> torch.Tensor:
+def create_pairwise_mask(labels):
+    labels = labels.reshape(-1)
+    num_samples = len(labels)
+    pairwise_mask = torch.zeros(num_samples, num_samples).to(labels.device)
+
+    for i in range(num_samples):
+        pairwise_mask[i, :] = (labels == labels[i])
+
+    return pairwise_mask
+
+def clip_loss(similarity: torch.Tensor, label) -> torch.Tensor:
+    label_mask = 1 - create_pairwise_mask(label) + torch.eye(similarity.shape[0]).to(similarity.device)
+    label_mask = torch.cat((label_mask, torch.ones(label_mask.shape).to(label_mask.device)), dim=-1)
+    similarity[label_mask==0] = -float('inf')
     overhead_img_loss = contrastive_loss(similarity, compute_neg=True)
     ground_img_loss = contrastive_loss(similarity.t())
-    return 0.4*overhead_img_loss + 0.6*ground_img_loss
+    return 0.4*torch.mean(torch.sum(overhead_img_loss, dim=-1)) + 0.6*torch.mean(torch.sum(ground_img_loss, dim=-1))
 
 def contrastive_loss(logits: torch.Tensor, compute_neg=False) -> torch.Tensor:
     if compute_neg:
-        return nn.functional.cross_entropy(logits, torch.cat((torch.eye(logits.shape[0]), torch.zeros(logits.shape[0], logits.shape[0])), dim=-1).to(logits.device))
+        gt = torch.cat((torch.eye(logits.shape[0]), torch.zeros(logits.shape[0], logits.shape[0])), dim=-1).to(logits.device)
+        return - gt*torch.log(logits.softmax(-1)+1e-6)
     else:
-        return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
+        gt = torch.eye(logits.shape[1], device=logits.device)
+        return - gt*torch.log(logits[:logits.shape[1]].softmax(-1)+1e-6)
 
 class ResLayer(nn.Module):
     def __init__(self, linear_size):
@@ -71,11 +86,11 @@ class EnvBind(pl.LightningModule):
         return image_embeds, env_embeds
     
     def shared_step(self, batch):
-        image, env_feats, env_feats_neg = batch
+        image, env_feats, env_feats_neg, label = batch
         image_embeds, env_embeds = self(image, env_feats, env_feats_neg)
         logit_scale = self.logit_scale.exp()
         logits_per_img = torch.matmul(image_embeds,env_embeds.t())*logit_scale
-        cross_contrastive_loss = clip_loss(logits_per_img)
+        cross_contrastive_loss = clip_loss(logits_per_img, label)
         return cross_contrastive_loss
     
     def training_step(self, batch, batch_idx):
