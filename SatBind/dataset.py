@@ -21,6 +21,7 @@ class SatNatDataset(Dataset):
             assert self.images[i]['id'] == self.annot[i]['id']
             self.images[i]['label'] = self.annot[i]['category_id']
         self.filtered_json = [d for d in self.images if d['latitude'] is not None and d['longitude'] is not None]
+        self.sat_paths = {d['id']: str(d['id'])+'_'+str(d['latitude'])+'_'+str(d['longitude'])+'.jpeg' for d in self.filtered_json}
         self.img_transform = transforms.Compose([
                 transforms.Resize((256, 256)),
                 # transforms.CenterCrop((224, 224)),
@@ -47,7 +48,7 @@ class SatNatDataset(Dataset):
     def __getitem__(self, idx):
         img_path = os.path.join(self.img_dir, self.filtered_json[idx]['file_name'])
         img_path = img_path.replace('train_mini', 'train')
-        imo_path = glob.glob(os.path.join(self.imo_dir, str(self.filtered_json[idx]['id'])+'_*.jpeg'))[0]
+        imo_path = os.path.join(self.imo_dir, self.sat_paths[self.filtered_json[idx]['id']])
         img = self.img_transform(Image.open(img_path))
         imo = self.imo_transform(Image.open(imo_path))
         return img, imo, self.filtered_json[idx]['label']

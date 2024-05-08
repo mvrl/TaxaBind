@@ -28,8 +28,8 @@ def clip_loss(similarity: torch.Tensor, label) -> torch.Tensor:
     return 0.5*torch.mean(torch.sum(overhead_img_loss, dim=-1)) + 0.5*torch.mean(torch.sum(ground_img_loss, dim=-1))
 
 def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
-    gt = torch.eye(logits.shape[1], device=logits.device)
-    return - gt*torch.log(logits[:logits.shape[1]].softmax(-1)+1e-6)
+    gt = torch.eye(logits.shape[0], device=logits.device)
+    return - gt*torch.log(logits.softmax(-1)+1e-6)
 
 class SatBind(pl.LightningModule):
     def __init__(self, train_dataset, val_dataset, **kwargs):
@@ -49,10 +49,7 @@ class SatBind(pl.LightningModule):
         self.batch_size = kwargs.get('batch_size', 10)
         self.lr = kwargs.get('lr', 1e-4)
     
-    #need to update 
-    def change_similarity(similarity, labels):
-        return similarity
-    
+
     def forward(self, batch):
         img, imo, label = batch
         #compute bioclip embeddings
@@ -70,7 +67,7 @@ class SatBind(pl.LightningModule):
         #normalize embeddings
         #img embeds is already normalized
         img_embeds = img_embeds
-        imo_embeds = imo_embeds/imo_embeds.norm(p=2, dim=-1, keepdim=True)
+        imo_embeds = torch.nn.functional.normalize(imo_embeds, dim=-1)
         
         #exponentiate the log of temperrature
         logit_scale = self.logit_scale.exp()
@@ -91,14 +88,14 @@ class SatBind(pl.LightningModule):
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
                           batch_size=self.batch_size,
-                          num_workers=0,
+                          num_workers=16,
                           shuffle=True,
                           persistent_workers=False)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset,
                           batch_size=self.batch_size,
-                          num_workers=0,
+                          num_workers=16,
                           shuffle=True,
                           persistent_workers=False)
 
@@ -118,12 +115,13 @@ class SatBind(pl.LightningModule):
 if __name__ == '__main__':
     img_dir = '/scratch/s.sastry/ecobind_data/'
     imo_dir = '/scratch/s.sastry/ecobind_satellite/ecobind_sentinel/images/sentinel/'
+    imo_dir_val = '/scratch/s.sastry/ecobind_satellite/ecobind_val_sentinel/images/sentinel/'
     train_json_path = '/scratch/s.sastry/ecobind_data/train_mini.json'
     val_json_path = '/scratch/s.sastry/ecobind_data/val.json'
     
     #define dataset
     train_dataset = SatNatDataset(img_dir, imo_dir, train_json_path)
-    val_dataset = SatNatDataset(img_dir, imo_dir, val_json_path)
+    val_dataset = SatNatDataset(img_dir, imo_dir_val, val_json_path)
 
     #define model
     model = SatBind(train_dataset=train_dataset, val_dataset=val_dataset)
@@ -132,7 +130,7 @@ if __name__ == '__main__':
     checkpoint = ModelCheckpoint(
         monitor='val_loss',
         dirpath='checkpoints',
-        filename='envbind-{epoch:02d}-{val_loss:.2f}',
+        filename='satbind-{epoch:02d}-{val_loss:.2f}',
         mode='min'
     )
     trainer = pl.Trainer(
@@ -143,8 +141,9 @@ if __name__ == '__main__':
         callbacks=[checkpoint],
         accumulate_grad_batches=8,
         logger=logger,
-        log_every_n_steps=10,
-        val_check_interval=0.8
+        log_every_n_steps=1,
+        val_check_interval=0.25,
+        fast_dev_run=1
         )
     trainer.fit(model)
     
