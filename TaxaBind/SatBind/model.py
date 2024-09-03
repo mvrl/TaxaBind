@@ -39,19 +39,22 @@ class SatBind(pl.LightningModule):
 
         #initialize bio CLIP with frozen weights
         self.bio_model, *_ = open_clip.create_model_and_transforms('hf-hub:imageomics/bioclip')
-        for param in self.bio_model.parameters():
-            param.requires_grad = False
+        # for param in self.bio_model.parameters():
+        #     param.requires_grad = False
         
         #initialize CLIP with trainable weights
         self.imo_encoder = CLIPVisionModelWithProjection.from_pretrained('openai/clip-vit-base-patch16').train()
+        for layer in self.imo_encoder.children():
+            if hasattr(layer, 'reset_parameters'):
+                layer.reset_parameters()
 
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.batch_size = kwargs.get('batch_size', 10)
+        self.batch_size = kwargs.get('batch_size', 256)
         self.lr = kwargs.get('lr', 1e-4)
     
 
     def forward(self, batch):
-        img, imo, label = batch
+        img, imo, label, *_ = batch
         #compute bioclip embeddings
         img_embeds, *_ = self.bio_model(img)
         
@@ -63,7 +66,7 @@ class SatBind(pl.LightningModule):
     
     def shared_step(self, batch):
         
-        img_embeds, imo_embeds, label = self(batch)
+        img_embeds, imo_embeds, label, *_ = self(batch)
         #normalize embeddings
         #img embeds is already normalized
         img_embeds = img_embeds
@@ -84,6 +87,11 @@ class SatBind(pl.LightningModule):
         self.log('train_loss', loss, sync_dist=True, prog_bar=True, on_epoch=True, batch_size=self.batch_size)
         self.log('temperature', self.logit_scale.data, prog_bar=True, on_epoch=True, batch_size=self.batch_size)
         return loss
+    
+    def validation_step(self, batch, batch_idx):
+        loss = self.shared_step(batch)
+        self.log('val_loss', loss, sync_dist=True, prog_bar=True, on_epoch=True, batch_size=self.batch_size)
+        return loss
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
@@ -96,7 +104,7 @@ class SatBind(pl.LightningModule):
         return DataLoader(self.val_dataset,
                           batch_size=self.batch_size,
                           num_workers=16,
-                          shuffle=True,
+                          shuffle=False,
                           persistent_workers=False)
 
     def configure_optimizers(self):
@@ -108,16 +116,17 @@ class SatBind(pl.LightningModule):
                                     )
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
             optimizer=self.optim,
-            T_0=20
+            T_0=20,
+            eta_min=1e-6
         )
         return [self.optim], [self.scheduler]   
 
 if __name__ == '__main__':
-    img_dir = '/scratch/s.sastry/ecobind_data/'
-    imo_dir = '/scratch/s.sastry/ecobind_satellite/ecobind_sentinel/images/sentinel/'
-    imo_dir_val = '/scratch/s.sastry/ecobind_satellite/ecobind_val_sentinel/images/sentinel/'
-    train_json_path = '/scratch/s.sastry/ecobind_data/train_mini.json'
-    val_json_path = '/scratch/s.sastry/ecobind_data/val.json'
+    img_dir = '../ecobind_data/'
+    imo_dir = '../ecobind_satellite/ecobind_sentinel/images/sentinel/'
+    imo_dir_val = '../ecobind_satellite/ecobind_val_sentinel/images/sentinel/'
+    train_json_path = '../ecobind_data/train.json'
+    val_json_path = '../ecobind_data/val.json'
     
     #define dataset
     train_dataset = SatNatDataset(img_dir, imo_dir, train_json_path)
@@ -126,7 +135,7 @@ if __name__ == '__main__':
     #define model
     model = SatBind(train_dataset=train_dataset, val_dataset=val_dataset)
     torch.cuda.empty_cache()
-    logger = WandbLogger(project="Sat-Bind", name="demo_run", mode='disabled')
+    logger = WandbLogger(project="Eco-Bind", name="sat-bind")
     checkpoint = ModelCheckpoint(
         monitor='val_loss',
         dirpath='checkpoints',
@@ -135,15 +144,15 @@ if __name__ == '__main__':
     )
     trainer = pl.Trainer(
         accelerator='gpu',
-        devices='0,', 
+        strategy='ddp_find_unused_parameters_true',
+        devices=2, 
         max_epochs=1500,
         num_nodes=1,
         callbacks=[checkpoint],
         accumulate_grad_batches=8,
         logger=logger,
         log_every_n_steps=1,
-        val_check_interval=0.25,
-        fast_dev_run=1
+        val_check_interval=0.5,
         )
     trainer.fit(model)
     

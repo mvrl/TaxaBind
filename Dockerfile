@@ -11,7 +11,7 @@ RUN apt-get update \
 COPY requirements.txt .
 
 # Create a new conda environment and install all requirements 
-RUN conda create -n ecobind python=3.10 && \
+RUN conda create -n taxabind python=3.10 && \
 source /opt/conda/bin/activate ecobind && \
 pip install -r requirements.txt
 

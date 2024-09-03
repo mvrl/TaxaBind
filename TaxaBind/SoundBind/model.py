@@ -2,22 +2,20 @@ import open_clip
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from location_encoder import LocationEncoder
+from sound_encoder import CLAP_audiomodel_withProjection as AudioEncoder
 import numpy as np
 from torch.utils.data import DataLoader
 
 def clip_loss(similarity: torch.Tensor) -> torch.Tensor:
-    overhead_img_loss = contrastive_loss(similarity, compute_neg=True)
+    audio_loss = contrastive_loss(similarity)
     ground_img_loss = contrastive_loss(similarity.t())
-    return 0.4*overhead_img_loss + 0.6*ground_img_loss
+    return 0.5*audio_loss + 0.5*ground_img_loss
 
-def contrastive_loss(logits: torch.Tensor, compute_neg=False) -> torch.Tensor:
-    if compute_neg:
-        return nn.functional.cross_entropy(logits, torch.cat((torch.eye(logits.shape[0]), torch.zeros(logits.shape[0], logits.shape[0])), dim=-1).to(logits.device))
-    else:
-        return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
+def contrastive_loss(logits: torch.Tensor) -> torch.Tensor:
+    
+    return nn.functional.cross_entropy(logits[:logits.shape[1]], torch.arange(logits.shape[1], device=logits.device))
 
-class LocationBind(pl.LightningModule):
+class AudioBind(pl.LightningModule):
     def __init__(self, train_dataset, val_dataset, **kwargs):
         super().__init__()
         self.train_dataset = train_dataset
@@ -25,27 +23,24 @@ class LocationBind(pl.LightningModule):
         self.model, *_ = open_clip.create_model_and_transforms('hf-hub:imageomics/bioclip')
         for param in self.model.parameters():
             param.requires_grad = False
-        self.location_encoder = LocationEncoder()
+        self.audio_encoder = AudioEncoder(freeze=False)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.batch_size = kwargs.get('batch_size', 1024)
+        self.batch_size = kwargs.get('batch_size')
+        self.num_workers = kwargs.get('num_workers')
         self.lr = kwargs.get('lr', 1e-4)
 
-    def forward(self, image, location, sample_neg=False):
+    def forward(self, image, audio):
         with torch.no_grad():
             image_embeds, *_ = self.model(image)
-        if sample_neg:
-            neg_lat = torch.rand(image_embeds.shape[0], 2).to(location.device)
-            neg_lat[:, 0] = neg_lat[:, 0]*180.0 - 90.0
-            neg_lat[:, 1] = neg_lat[:, 1]*360.0 - 180.0
-            location = torch.cat((location, neg_lat))
-        location_embeds = torch.nn.functional.normalize(self.location_encoder(location), dim=-1)
-        return image_embeds, location_embeds
+        unnormalized_audio_embeds = self.audio_encoder(audio)
+        audio_embeds = torch.nn.functional.normalize(unnormalized_audio_embeds, dim=-1)
+        return image_embeds, audio_embeds
     
     def shared_step(self, batch):
-        image, location, *_ = batch
-        image_embeds, location_embeds = self(image, location, sample_neg=True)
+        image, audio, *_ = batch
+        image_embeds, audio_embeds = self(image, audio)
         logit_scale = self.logit_scale.exp()
-        logits_per_img = torch.matmul(image_embeds,location_embeds.t())*logit_scale
+        logits_per_img = torch.matmul(image_embeds,audio_embeds.t())*logit_scale
         cross_contrastive_loss = clip_loss(logits_per_img)
         return cross_contrastive_loss
     
@@ -67,14 +62,14 @@ class LocationBind(pl.LightningModule):
     def train_dataloader(self):
         return DataLoader(self.train_dataset,
                           batch_size=self.batch_size,
-                          num_workers=16,
+                          num_workers=self.num_workers,
                           shuffle=True,
                           persistent_workers=False)
 
     def val_dataloader(self):
         return DataLoader(self.val_dataset,
                           batch_size=self.batch_size,
-                          num_workers=16,
+                          num_workers=self.num_workers,
                           shuffle=False,
                           persistent_workers=False)
     
@@ -89,4 +84,4 @@ class LocationBind(pl.LightningModule):
             optimizer=self.optim,
             T_0=20
         )
-        return [self.optim], [self.scheduler]                            
+        return [self.optim], [self.scheduler]

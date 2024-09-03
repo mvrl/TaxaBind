@@ -71,16 +71,16 @@ class EnvBind(pl.LightningModule):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.model, *_ = open_clip.create_model_and_transforms('hf-hub:imageomics/bioclip')
-        for param in self.model.parameters():
-            param.requires_grad = False
+        # for param in self.model.parameters():
+        #     param.requires_grad = False
         self.env_encoder = ResidualFCNet(num_inputs=20, num_filts=512)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.batch_size = kwargs.get('batch_size', 1024)
+        self.batch_size = kwargs.get('batch_size', 512)
         self.lr = kwargs.get('lr', 1e-4)
 
     def forward(self, image, env_feats, env_feats_neg):
-        with torch.no_grad():
-            image_embeds, *_ = self.model(image)
+        #with torch.no_grad():
+        image_embeds, *_ = self.model(image)
         env_feats = torch.cat((env_feats, env_feats_neg))
         env_embeds = torch.nn.functional.normalize(self.env_encoder(env_feats.float()), dim=-1)
         return image_embeds, env_embeds

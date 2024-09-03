@@ -33,19 +33,19 @@ if __name__=='__main__':
     checkpoint = ModelCheckpoint(
         monitor='val_loss',
         dirpath='checkpoints',
-        filename='envbind-{epoch:02d}-{val_loss:.2f}',
+        filename='envbind-finetune-{epoch:02d}-{val_loss:.2f}',
         mode='min'
     )
     trainer = pl.Trainer(
         accelerator='gpu',
-        devices=1,
-        strategy='ddp_find_unused_parameters_false',
+        devices=2,
+        strategy='ddp_find_unused_parameters_true',
         max_epochs=1500,
         num_nodes=1,
         callbacks=[checkpoint],
         accumulate_grad_batches=8,
         logger=logger,
         log_every_n_steps=1,
-        val_check_interval=0.25
+        val_check_interval=0.5
         )
     trainer.fit(model)
