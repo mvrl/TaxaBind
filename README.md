@@ -21,6 +21,49 @@ TaxaBind is a suite of multimodal models useful for downstream ecological tasks 
 
 ![](imgs/framework_2.jpg)
 
+## ⚙️ Usage
+Our pretrained models are made available through `rshf` and `transformers` package for easy inference.
+
+Load and initialize taxabind config:
+```python
+from transformers import PretrainedConfig
+from rshf.taxabind import TaxaBind
+
+config = PretrainedConfig.from_pretrained("MVRL/taxabind-config")
+taxabind = TaxaBind(config)
+```
+
+📎 Loading ground-level image and text encoders:
+```python
+# Loads open_clip style model
+
+model = taxabind.get_image_text_encoder()
+tokenizer = taxabind.get_tokenizer()
+processor = taxabind.get_image_processor()
+```
+
+🛰️ Loading satellite image encoder:
+```python
+sat_encoder = taxabind.get_sat_encoder()
+sat_processor = taxabind.get_sat_processor()
+```
+
+📍 Loading location encoder:
+```python
+location_encoder = taxabind.get_sat_encoder()
+```
+
+🔈 Loading audio encoder:
+```python
+audio_encoder = taxabind.get_audio_encoder()
+audio_processor = taxabind.get_audio_processor()
+```
+
+🌦️ Loading environmental encoder:
+```python
+env_encoder = taxabind.get_env_encoder()
+env_processor = taxabind.get_env_processor()
+```
 
 
 ## 🔍 Additional Links

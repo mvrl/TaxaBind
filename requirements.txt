@@ -1,8 +1,4 @@
-transformers
-open_clip_torch
-torch
-torchvision
-numpy
+rshf>=0.1.0
 matplotlib
 scikit-learn
 scikit-image
