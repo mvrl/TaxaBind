@@ -5,6 +5,11 @@ import torch.nn as nn
 from sound_encoder import CLAP_audiomodel_withProjection as AudioEncoder
 import numpy as np
 from torch.utils.data import DataLoader
+from config import config
+import os
+import random
+from dataset import INatDataset
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 def clip_loss(similarity: torch.Tensor) -> torch.Tensor:
     audio_loss = contrastive_loss(similarity)
@@ -21,8 +26,9 @@ class AudioBind(pl.LightningModule):
         self.train_dataset = train_dataset
         self.val_dataset = val_dataset
         self.model, *_ = open_clip.create_model_and_transforms('hf-hub:imageomics/bioclip')
-        for param in self.model.parameters():
-            param.requires_grad = False
+        if config.locked_tuning:
+            for param in self.model.parameters():
+                param.requires_grad = False
         self.audio_encoder = AudioEncoder(freeze=False)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
         self.batch_size = kwargs.get('batch_size')
@@ -85,3 +91,47 @@ class AudioBind(pl.LightningModule):
             T_0=20
         )
         return [self.optim], [self.scheduler]
+
+def seed_everything(seed=42):
+    """
+    seed: int
+    """
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+if __name__=='__main__':
+    import warnings
+    warnings.filterwarnings("ignore")
+    torch.set_warn_always(False)
+
+    seed_everything()
+    train_dataset = INatDataset(data_file=config.train_df, mode='train')
+    val_dataset = INatDataset(data_file=config.val_df, mode='val')
+    kwargs = {'batch_size':config.batch_size, 'num_workers': config.num_workers}
+    
+    model = AudioBind(train_dataset, val_dataset, **kwargs)
+    torch.cuda.empty_cache()
+
+    checkpoint = ModelCheckpoint(
+        monitor='val_loss',
+        dirpath=config.save_dir,
+        filename=config.filename,
+        mode='min',
+        save_top_k=3
+    )
+    trainer = pl.Trainer(
+        accelerator='gpu',
+        devices=config.devices,
+        strategy='ddp',
+        max_epochs=config.max_epochs,
+        num_nodes=1,
+        callbacks=[checkpoint],
+        accumulate_grad_batches=config.accumulate_grad_batches,
+        log_every_n_steps=1
+        )
+    trainer.fit(model)

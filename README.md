@@ -3,17 +3,19 @@
 <img src="imgs/taxabind_logo.png" width="250">
 
 [![arXiv](https://img.shields.io/badge/arXiv-2404.06637-red?style=flat&label=arXiv)]()
-[![Project Page](https://img.shields.io/badge/Project-Website-green)]()
+[![Project Page](https://img.shields.io/badge/Project-Website-green)](https://vishu26.github.io/taxabind/index.html)
 [![Hugging Face Models](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Models-yellow
 )]()
-[![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Spaces-yellow?style=flat&logo=hug)](https://huggingface.co/spaces/MVRL/)</center>
+[![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Spaces-yellow?style=flat&logo=hug)](https://huggingface.co/spaces/MVRL/taxabind-demo)</center>
 
 [Srikumar Sastry*](https://vishu26.github.io/),
 [Subash Khanal](https://subash-khanal.github.io/),
 [Aayush Dhakal](https://scholar.google.com/citations?user=KawjT_8AAAAJ&hl=en),
-[Adeel Ahmad](),
+[Adeel Ahmad](https://adealgis.wixsite.com/adeel-ahmad-geog),
 [Nathan Jacobs](https://jacobsn.github.io/)
 (*Corresponding Author)
+
+WACV 2025
 </div>
 
 This repository is the official implementation of [TaxaBind]().

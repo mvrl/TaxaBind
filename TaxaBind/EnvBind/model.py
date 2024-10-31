@@ -4,6 +4,11 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import DataLoader
+from config import config
+from dataset import INatDataset
+from pytorch_lightning.callbacks import ModelCheckpoint
+import os
+import random
 
 def create_pairwise_mask(labels):
     labels = labels.reshape(-1)
@@ -75,8 +80,8 @@ class EnvBind(pl.LightningModule):
         #     param.requires_grad = False
         self.env_encoder = ResidualFCNet(num_inputs=20, num_filts=512)
         self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))
-        self.batch_size = kwargs.get('batch_size', 512)
-        self.lr = kwargs.get('lr', 1e-4)
+        self.batch_size = kwargs.get('batch_size', config.batch_size)
+        self.lr = kwargs.get('lr', config.lr)
 
     def forward(self, image, env_feats, env_feats_neg):
         #with torch.no_grad():
@@ -133,4 +138,43 @@ class EnvBind(pl.LightningModule):
             optimizer=self.optim,
             T_0=20
         )
-        return [self.optim], [self.scheduler]                            
+        return [self.optim], [self.scheduler]
+
+def seed_everything(seed=42):
+    """
+    seed: int
+    """
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+
+if __name__=='__main__':
+    seed_everything(8989)
+    train_dataset = INatDataset(config.img_dir, config.train_json_path, config.train_env_path, mode='train')
+    val_dataset = INatDataset(config.img_dir, config.val_json_path, config.val_env_path, mode='val')
+    model = EnvBind(train_dataset=train_dataset, val_dataset=val_dataset)
+    torch.cuda.empty_cache()
+
+    checkpoint = ModelCheckpoint(
+        monitor='val_loss',
+        dirpath=config.save_dir,
+        filename=config.filename,
+        mode='min'
+    )
+    trainer = pl.Trainer(
+        accelerator='gpu',
+        devices=config.devices,
+        strategy='ddp_find_unused_parameters_true',
+        max_epochs=config.max_epochs,
+        num_nodes=1,
+        callbacks=[checkpoint],
+        accumulate_grad_batches=config.accumulate_grad_batches,
+        log_every_n_steps=1,
+        val_check_interval=config.val_check_interval
+        )
+    trainer.fit(model)

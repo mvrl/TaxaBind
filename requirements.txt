@@ -1,4 +1,4 @@
-rshf>=0.1.0
+rshf>=0.1.2
 matplotlib
 scikit-learn
 scikit-image
