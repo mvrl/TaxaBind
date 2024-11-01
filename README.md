@@ -25,6 +25,17 @@ TaxaBind is a suite of multimodal models useful for downstream ecological tasks 
 
 ![](imgs/framework_2.jpg)
 
+
+## 🎯 Zero-Shot Image Classification
+![](imgs/results.png)
+Our framework outperforms the state-of-the-art in both unimodal (BioCLIP, ArborCLIP) and multimodal setting (ImageBind).
+
+## 🔥 Large Mulitmodal Ecological Datasets
+
+* We release [TaxaBench-8k](https://huggingface.co/datasets/MVRL/TaxaBench-8k), a truly multimodal dataset containing six paired modalities for evaluating large ecological models.
+* We release [iSatNat](https://huggingface.co/datasets/MVRL/iSatNat), containing 2.7M pairs of satellite images and ground-level species images.
+* We release [iSoundNat](https://huggingface.co/datasets/MVRL/iSoundNat), containing 88,130 pairs of audio and ground-level species images.
+
 ## ⚙️ Usage
 Our pretrained models are made available through `rshf` and `transformers` package for easy inference.
 
@@ -67,6 +78,18 @@ audio_processor = taxabind.get_audio_processor()
 ```python
 env_encoder = taxabind.get_env_encoder()
 env_processor = taxabind.get_env_processor()
+```
+
+📑 Citation
+
+```bibtex
+@inproceedings{sastry2025taxabind,
+    title={TaxaBind: A Unified Embedding Space for Ecological Applications},
+    author={Sastry, Srikumar and Khanal, Subash and Dhakal, Aayush and Ahmad, Adeel and Jacobs, Nathan},
+    booktitle={Winter Conference on Applications of Computer Vision},
+    year={2025},
+    organization={IEEE/CVF}
+}
 ```
 
 
