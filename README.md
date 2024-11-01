@@ -5,7 +5,9 @@
 [![arXiv](https://img.shields.io/badge/arXiv-2404.06637-red?style=flat&label=arXiv)]()
 [![Project Page](https://img.shields.io/badge/Project-Website-green)](https://vishu26.github.io/taxabind/index.html)
 [![Hugging Face Models](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Models-yellow
-)]()
+)](https://huggingface.co/collections/MVRL/taxabind-664be83f97dd6a0c4a5d2293)
+[![Hugging Face Models](https://img.shields.io/badge/TaxaBind-Datasets-blue
+)](https://huggingface.co/collections/MVRL/taxabind-datasets-672292b5a68683b4272950db)
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20HuggingFace-Spaces-yellow?style=flat&logo=hug)](https://huggingface.co/spaces/MVRL/taxabind-demo)</center>
 
 [Srikumar Sastry*](https://vishu26.github.io/),
