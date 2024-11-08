@@ -65,7 +65,7 @@ sat_processor = taxabind.get_sat_processor()
 
 📍 Loading location encoder:
 ```python
-location_encoder = taxabind.get_sat_encoder()
+location_encoder = taxabind.get_location_encoder()
 ```
 
 🔈 Loading audio encoder:
